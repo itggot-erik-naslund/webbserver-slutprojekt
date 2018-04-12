@@ -1,0 +1,14 @@
+form class="logout" method="POST" action="/logout"
+    input type="submit" value="logout"
+
+
+    p Welcome
+p
+   a href="/room_1" Room 1
+-rooms.each do |room|
+    form class="room_#{room[2]}" action="Room #{room[2]}"
+    input type="submit" value="Room #{room[2]}"
+
+
+
+
