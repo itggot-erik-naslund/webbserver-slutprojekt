@@ -80,7 +80,7 @@ class App < Sinatra::Base
 		number = params[:id]
 		if session[:login]
 			db = SQLite3::Database.new("db/main.sqlite")
-			if db.execute("SELECT FROM Room WHERE users_history IS ?", session[:username]) != []
+			if db.execute("SELECT users_history FROM Room WHERE users_history IS ?", session[:username]) == []
 				db.execute("INSERT INTO Room ('users_history') VALUES(?)", session[:username])
 				user_history = db.execute("SELECT users_history FROM Room")
 				if !request.websocket?
