@@ -80,33 +80,36 @@ class App < Sinatra::Base
 		number = params[:id]
 		if session[:login]
 			db = SQLite3::Database.new("db/main.sqlite")
-			db.execute("INSERT INTO Room ('users_history') VALUES(?)", [session[:username]])
-			if !request.websocket?
-				slim(:room, locals:{number:number})
-			else
-				request.websocket do |ws|
-					ws.onopen do
-						ws.send("Welcome to Room_#{number}")
-						settings.sockets << ws
-					end
-					ws.onmessage do |msg|
-						EM.next_tick do 			#+ Ta reda på vilket rum meddelandet ska skickas till.
-							settings.sockets.each do |s|
-								s.send(session[:username].to_s + ": " + msg) # Skickar detta till alla anslutna användare
+			if db.execute("SELECT FROM Room WHERE users_history IS ?", session[:username]) != []
+				db.execute("INSERT INTO Room ('users_history') VALUES(?)", session[:username])
+				user_history = db.execute("SELECT users_history FROM Room")
+				if !request.websocket?
+					slim(:room, locals:{number:number, user_history:user_history})
+				else
+					request.websocket do |ws|
+						ws.onopen do
+							ws.send("Welcome to Room_#{number}")
+							settings.sockets << ws
+						end
+						ws.onmessage do |msg|
+							EM.next_tick do 			#+ Ta reda på vilket rum meddelandet ska skickas till.
+								settings.sockets.each do |s|
+									s.send(session[:username].to_s + ": " + msg) # Skickar detta till alla anslutna användare
+								end
 							end
 						end
-					end
-					ws.onclose do
-						warn("Chatroom closed")
-						settings.sockets.delete(ws)
+						ws.onclose do
+							warn("Chatroom closed")
+							settings.sockets.delete(ws)
+						end
 					end
 				end
+			else
+				redirect("/error")
 			end
-		else
-			redirect("/error")
 		end
 	end
-
+end
 #Vad har jag gjort?
 #Vad var svårt/problem?
 #Vad ska jag göra nästa gång? 
