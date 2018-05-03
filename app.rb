@@ -8,7 +8,7 @@ class App < Sinatra::Base
 
 
 	post '/login' do
-		db = SQLite3::Database.new("main.sqlite") 
+		db = SQLite3::Database.new("db/main.sqlite") 
 		username = params["username"] 
 		password = params["password"]
 		accounts = db.execute("SELECT * FROM login WHERE username=?", username)
@@ -30,7 +30,7 @@ class App < Sinatra::Base
 
 	get'/login' do
 		if session[:login]
-			db = SQLite3::Database.new("main.sqlite") 
+			db = SQLite3::Database.new("db/main.sqlite") 
 			rooms = db.execute("SELECT * FROM Room")
 			slim(:login)
 		else
@@ -43,7 +43,7 @@ class App < Sinatra::Base
 	end
 
 	post '/register' do
-		db = SQLite3::Database.new('main.sqlite')
+		db = SQLite3::Database.new('db/main.sqlite')
 		username = params["username"]
 		password = params["password"]
 		confirm = params["password2"]
@@ -90,8 +90,8 @@ class App < Sinatra::Base
 						settings.sockets << ws
 					end
 					ws.onmessage do |msg|
-						EM.next_tick do 
-							settings.sockets.each do |s| 
+						EM.next_tick do 			#+ Ta reda på vilket rum meddelandet ska skickas till.
+							settings.sockets.each do |s|
 								s.send(session[:username].to_s + ": " + msg) # Skickar detta till alla anslutna användare
 							end
 						end
