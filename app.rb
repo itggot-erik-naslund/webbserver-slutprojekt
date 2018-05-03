@@ -1,5 +1,7 @@
 class App < Sinatra::Base
 	enable :sessions
+	set :server, 'thin'
+	set :sockets, []
 	get '/' do
 		slim:index
 	end
@@ -14,7 +16,8 @@ class App < Sinatra::Base
 
 		if account_password == password
 			result = db.execute("SELECT id FROM login WHERE username=?", [username]) 
-			session[:id] = accounts[0][0] 
+			session[:id] = accounts[0][0]
+			session[:username] = accounts[0][1]
 			session[:login] = true 
 			redirect("/login")
 		elsif password == nil
@@ -26,9 +29,13 @@ class App < Sinatra::Base
 	end
 
 	get'/login' do
-		db = SQLite3::Database.new("main.sqlite") 
-		rooms = db.execute("SELECT * FROM Room")
-		slim(:login, locals:{rooms:rooms})
+		if session[:login]
+			db = SQLite3::Database.new("main.sqlite") 
+			rooms = db.execute("SELECT * FROM Room")
+			slim(:login)
+		else
+			redirect("/error")
+		end
 	end
 
 	get '/register' do
@@ -59,6 +66,7 @@ class App < Sinatra::Base
 	post '/logout' do 
 		session[:login] = false
 		session[:id] = nil
+		session[:username] = nil
 		redirect('/')
 	end
 
@@ -69,34 +77,36 @@ class App < Sinatra::Base
 	get '/error' do
 		slim(:error, locals:{msg:session[:message]})
 	end
-
-	set :server, 'thin'
-	set :sockets, []
 	
-	get '/room_1' do
-	  if !request.websocket?
-		slim(:room_1)
-	  else
-		request.websocket do |ws|
-			ws.onopen do
-			ws.send("Hello World!")
-			settings.sockets << ws
-		  end
-		  ws.onmessage do |msg|
-			EM.next_tick { settings.sockets.each{|s| s.send(msg) } }
-		  end
-		  ws.onclose do
-			warn("websocket closed")
-			settings.sockets.delete(ws)
-		  end
+	get '/room/:id' do
+		number = params[:id]
+		if session[:login]
+			if !request.websocket?
+				slim(:room, locals:{number:number})
+			else
+				request.websocket do |ws|
+					ws.onopen do
+						ws.send("Welcome to Room_#{number}")
+						settings.sockets << ws
+					end
+					ws.onmessage do |msg|
+						EM.next_tick do 
+							settings.sockets.each do |s| 
+								s.send(session[:username].to_s + ": " + msg) # Skickar detta till alla anslutna användare
+							end
+						end
+					end
+					ws.onclose do
+						warn("Chatroom closed")
+						settings.sockets.delete(ws)
+					end
+				end
+			end
+		else
+			redirect("/error")
 		end
-	  end
 	end
-
+end
 #Vad har jag gjort?
 #Vad var svårt/problem?
 #Vad ska jag göra nästa gång? 
-	
-	
-	
-end

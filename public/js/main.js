@@ -5,8 +5,8 @@ window.onload = function(){
       }(document.getElementById('msgs'));
 
       var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
-      ws.onopen    = function()  { show('websocket opened'); };
-      ws.onclose   = function()  { show('websocket closed'); }
+      ws.onopen    = function()  { show('Chatroom opened'); };
+      ws.onclose   = function()  { show('Chatroom closed'); }
       ws.onmessage = function(m) { show(m.data);console.log(m) };
       
 
