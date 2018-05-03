@@ -30,8 +30,6 @@ class App < Sinatra::Base
 
 	get'/login' do
 		if session[:login]
-			db = SQLite3::Database.new("db/main.sqlite") 
-			rooms = db.execute("SELECT * FROM Room")
 			slim(:login)
 		else
 			redirect("/error")
@@ -81,6 +79,8 @@ class App < Sinatra::Base
 	get '/room/:id' do
 		number = params[:id]
 		if session[:login]
+			db = SQLite3::Database.new("db/main.sqlite")
+			db.execute("INSERT INTO Room ('users_history') VALUES(?)", [session[:username]])
 			if !request.websocket?
 				slim(:room, locals:{number:number})
 			else
@@ -106,7 +106,7 @@ class App < Sinatra::Base
 			redirect("/error")
 		end
 	end
-end
+
 #Vad har jag gjort?
 #Vad var svårt/problem?
 #Vad ska jag göra nästa gång? 
